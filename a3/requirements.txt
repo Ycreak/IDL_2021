@@ -1,0 +1,9 @@
+matplotlib
+opencv-python
+tensorflow
+numpy
+sklearn
+sklearn_crfsuite
+datetime
+pandas
+seaborn
