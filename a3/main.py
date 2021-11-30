@@ -63,8 +63,10 @@ def get_model():
     # We start by initializing a sequential model
     model = tf.keras.Sequential()
     # "Encode" the input sequence using an RNN, producing an output of size 256.
-    # In this case the size of our input vectors is [7, 13] as we have queries of length 7 and 13 unique characters. Each of these 7 elements in the query will be fed to the network one by one,
-    # as shown in the image above (except with 7 elements). # Hint: In other applications, where your input sequences have a variable length (e.g. sentences), you would use input_shape=(None, unique_characters).
+    # In this case the size of our input vectors is [7, 13] as we have queries of length 7 and 13 unique characters. 
+    # Each of these 7 elements in the query will be fed to the network one by one,
+    # as shown in the image above (except with 7 elements). # Hint: In other applications, where your input sequences 
+    # have a variable length (e.g. sentences), you would use input_shape=(None, unique_characters).
     model.add(LSTM(256, input_shape=(max_query_length, len(unique_characters))))
     # As the decoder RNN's input, repeatedly provide with the last output of RNN for each time step. Repeat 4 times as that's the maximum length of the output (e.g. '  1-199' = '-198')
     # when using 3-digit integers in queries. In other words, the RNN will always produce 4 characters as its output.
@@ -91,6 +93,9 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--create_model", action="store_true", help="specify whether to create the model: if not specified, we load from disk")
     p.add_argument("--create_dataset", action="store_true", help="specify whether to create the dataset: if not specified, we load from disk")
+    p.add_argument("--text2text", action="store_true", help="specify whether to run the text2text model")
+    p.add_argument("--img2text", action="store_true", help="specify whether to run the img2text model")
+
     FLAGS = p.parse_args()
 
     unique_characters = '0123456789+- ' # All unique characters that are used in the queries (13 in total: digits 0-9, 2 operands [+, -], and a space character ' '.)
@@ -102,6 +107,7 @@ if __name__ == "__main__":
     # Booleans
     num_epochs = 25
     create_line_plot = True
+    evaluate = False
 
     # Create the data (might take around a minute)
     X_text, X_img, y_text, y_img = load_data(create_dataset=FLAGS.create_dataset)
@@ -117,45 +123,110 @@ if __name__ == "__main__":
     #############################
     # 1. Text-to-text RNN model #
     #############################
-    evaluate = False
-    
-    X_train, X_test, y_train, y_test = train_test_split(X_text_onehot, y_text_onehot, test_size=0.2)
-    
-    if FLAGS.create_model:
-        model = get_model()
-        model, history = fit_model(model, X_train, y_train, num_epochs)
+    if FLAGS.text2text:
+        X_train, X_test, y_train, y_test = train_test_split(X_text_onehot, y_text_onehot, test_size=0.2)
+        
+        if FLAGS.create_model:
+            model = get_model()
+            model, history = fit_model(model, X_train, y_train, num_epochs)
 
-        if create_line_plot:
-            util.create_line_plot( # Create a line plot of the training
-                plots = (history.history['accuracy'],),
-                ylabel = 'Accuracy',
-                xlabel = 'Epoch',
-                plot_titles = ['train'],
-                title = 'LSTM accuracy',
-                plotname = 'lstm_accuracy'
-            )
-    else:
-        model = tf.keras.models.load_model('./model')
+            if create_line_plot:
+                util.create_line_plot( # Create a line plot of the training
+                    plots = (history.history['accuracy'],),
+                    ylabel = 'Accuracy',
+                    xlabel = 'Epoch',
+                    plot_titles = ['train'],
+                    title = 'LSTM accuracy',
+                    plotname = 'lstm_accuracy'
+                )
+        else:
+            model = tf.keras.models.load_model('./model')
 
-    if evaluate:
-        loss, accuracy = model.evaluate(X_test, y_test, verbose=1)
-        print('Model accuracy: {0}. Model loss: {1}.'.format(accuracy, loss))
+        if evaluate:
+            loss, accuracy = model.evaluate(X_test, y_test, verbose=1)
+            print('Model accuracy: {0}. Model loss: {1}.'.format(accuracy, loss))
 
-    # Create a confusion matrix for the labels predictions
-    confusion_matrix = util.create_confusion_matrix(model, X_test, y_test)
-    label_list = ['0','1','2','3','4','5','6','7','8','9','-','space'] #TODO: y does not predict +. can i just remove
-    df_confusion_matrix = pd.DataFrame(confusion_matrix, index = label_list,
-                                    columns = label_list)
+        # Create a confusion matrix for the labels predictions
+        confusion_matrix = util.create_confusion_matrix(model, X_test, y_test)
+        label_list = ['0','1','2','3','4','5','6','7','8','9','-','space'] #TODO: y does not predict +. can i just remove
+        df_confusion_matrix = pd.DataFrame(confusion_matrix, index = label_list,
+                                        columns = label_list)
 
-    util.create_heatmap(dataframe = df_confusion_matrix,
-                        ylabel =  'PREDICTED',
-                        xlabel = 'TRUTH', 
-                        title = 'CONFUSION MATRIX TEXT2TEXT',
-                        filename = 'confusion_matrix_lstm_text2text',
-                        vmax = 500
-                        )
-   
-    
+        util.create_heatmap(dataframe = df_confusion_matrix,
+                            ylabel =  'PREDICTED',
+                            xlabel = 'TRUTH', 
+                            title = 'CONFUSION MATRIX TEXT2TEXT',
+                            filename = 'confusion_matrix_lstm_text2text',
+                            vmax = 500
+                            )
+    ##############################
+    # 2. Image-to-text RNN model #
+    ##############################    
+    if FLAGS.img2text:
+        
+        # We have 7 MNIST digits for every X_img example. Each MNIST image is 28x28 pixels. Our input dimensions are therefore 28 * 7(28) = 28 * 196 = 5488
+        x_dim = 28 * 7
+        y_dim = 28 * 1
+        n_inputs = x_dim * y_dim # maximum query length
+
+        n_features = X_img.shape[1] # Count the number of columsn. these are our features
+        X_img = X_img.reshape(80000, 5488, 1).astype('float32')
+
+        print('SHAPE', X_img.shape)
+
+        print(n_features)
+        print(len(X_img))
+        # exit(0)
+
+        max_query_length = n_inputs # Maximum length of the query string (consists of two integers and an operand [e.g. '22+10'])
+        max_answer_length = max_int_length + 1    # Maximum length of the answer string
+        
+        num_timesteps = x_dim * y_dim
+        num_features = len(unique_characters)
+        # print(y_text_onehot.shape)
+        # y_text_onehot = y_text_onehot.reshape(1,-1)
+        # print(y_text_onehot.shape) # (3,)
+
+        # exit(0)
+
+        # x = tf.placeholder("float", [None, 196, 28])
+        # y = tf.placeholder("float", [None, 12])
+        # print(X_img[5567])
+        # print(type(X_img[5567]))
+        # # display_sample(5567)
+
+        # print(X_img[5567].shape)
+
+        # We start by initializing a sequential model
+        model = tf.keras.Sequential()
+        # "Encode" the input sequence using an RNN, producing an output of size 256.
+        # In this case the size of our input vectors is [7, 13] as we have queries of length 7 and 13 unique characters. 
+        # Each of these 7 elements in the query will be fed to the network one by one,
+        # as shown in the image above (except with 7 elements). # Hint: In other applications, where your input sequences 
+        # have a variable length (e.g. sentences), you would use input_shape=(None, unique_characters).
+        model.add(LSTM(256, input_shape=(num_timesteps, num_features)))
+        # As the decoder RNN's input, repeatedly provide with the last output of RNN for each time step. Repeat 4 times as that's the maximum length of the output (e.g. '  1-199' = '-198')
+        # when using 3-digit integers in queries. In other words, the RNN will always produce 4 characters as its output.
+        model.add(RepeatVector(max_answer_length))
+        # By setting return_sequences to True, return not only the last output but all the outputs so far in the form of (num_samples, timesteps, output_dim). 
+        # This is necessary as TimeDistributed in the below expects the first dimension to be the timesteps.
+        model.add(LSTM(128, return_sequences=True))
+        # Apply a dense layer to the every temporal slice of an input. For each of step of the output sequence, decide which character should be chosen.
+        model.add(TimeDistributed(Dense(len(unique_characters), activation='softmax')))
+        # Next we compile the model using categorical crossentropy as our loss function.
+        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        
+        history = model.fit(X_img, y_text_onehot, batch_size=32, epochs=2, verbose=1)
+
+
+
+
+
+
+
+
+
+
 
     # print('#####')
     # print(X_text[5578])
