@@ -4,6 +4,7 @@ from sklearn_crfsuite import metrics as crf_metrics
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sn
+import argparse
 
 from datetime import datetime
 
@@ -94,3 +95,13 @@ def create_heatmap(dataframe,xlabel, ylabel, title, filename, vmax):
     plt.title(title)
     plt.savefig(full_file_name, bbox_inches='tight')        
     plt.clf()  
+
+def restricted_float(x):
+    try:
+        x = float(x)
+    except ValueError:
+        raise argparse.ArgumentTypeError("%r not a floating-point literal" % (x,))
+
+    if x < 0.0 or x > 1.0:
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
+    return x    

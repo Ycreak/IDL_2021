@@ -1,3 +1,7 @@
+# To suppress Tensorflow warnings for experiments!
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 import argparse
 
 import tensorflow as tf
@@ -95,8 +99,10 @@ if __name__ == "__main__":
     p.add_argument("--create_dataset", action="store_true", help="specify whether to create the dataset: if not specified, we load from disk")
     p.add_argument("--text2text", action="store_true", help="specify whether to run the text2text model")
     p.add_argument("--img2text", action="store_true", help="specify whether to run the img2text model")
+    p.add_argument("--split", type=util.restricted_float, help="specify whether to run the img2text model")
 
     FLAGS = p.parse_args()
+    print(FLAGS)
 
     unique_characters = '0123456789+- ' # All unique characters that are used in the queries (13 in total: digits 0-9, 2 operands [+, -], and a space character ' '.)
     highest_integer = 199 # Highest value of integers contained in the queries
@@ -108,7 +114,7 @@ if __name__ == "__main__":
     num_epochs = 25
     create_line_plot = True
     evaluate = False
-
+    confusion_matrix = False
     # Create the data (might take around a minute)
     X_text, X_img, y_text, y_img = load_data(create_dataset=FLAGS.create_dataset)
     # print(X_text.shape, X_img.shape, y_text.shape, y_img.shape)      
@@ -124,7 +130,7 @@ if __name__ == "__main__":
     # 1. Text-to-text RNN model #
     #############################
     if FLAGS.text2text:
-        X_train, X_test, y_train, y_test = train_test_split(X_text_onehot, y_text_onehot, test_size=0.2)
+        X_train, X_test, y_train, y_test = train_test_split(X_text_onehot, y_text_onehot, test_size=FLAGS.split_size)
         
         if FLAGS.create_model:
             model = get_model()
@@ -144,21 +150,22 @@ if __name__ == "__main__":
 
         if evaluate:
             loss, accuracy = model.evaluate(X_test, y_test, verbose=1)
-            print('Model accuracy: {0}. Model loss: {1}.'.format(accuracy, loss))
+            print('Model accuracy: {0}. Model loss: {1}. Split size: {2}'.format(accuracy, loss, FLAGS.split))
 
-        # Create a confusion matrix for the labels predictions
-        confusion_matrix = util.create_confusion_matrix(model, X_test, y_test)
-        label_list = ['0','1','2','3','4','5','6','7','8','9','-','space'] #TODO: y does not predict +. can i just remove
-        df_confusion_matrix = pd.DataFrame(confusion_matrix, index = label_list,
-                                        columns = label_list)
+        if confusion_matrix:
+            # Create a confusion matrix for the labels predictions
+            confusion_matrix = util.create_confusion_matrix(model, X_test, y_test)
+            label_list = ['0','1','2','3','4','5','6','7','8','9','-','space'] #TODO: y does not predict +. can i just remove
+            df_confusion_matrix = pd.DataFrame(confusion_matrix, index = label_list,
+                                            columns = label_list)
 
-        util.create_heatmap(dataframe = df_confusion_matrix,
-                            ylabel =  'PREDICTED',
-                            xlabel = 'TRUTH', 
-                            title = 'CONFUSION MATRIX TEXT2TEXT',
-                            filename = 'confusion_matrix_lstm_text2text',
-                            vmax = 500
-                            )
+            util.create_heatmap(dataframe = df_confusion_matrix,
+                                ylabel =  'PREDICTED',
+                                xlabel = 'TRUTH', 
+                                title = 'CONFUSION MATRIX TEXT2TEXT',
+                                filename = 'confusion_matrix_lstm_text2text',
+                                vmax = 500
+                                )
     ##############################
     # 2. Image-to-text RNN model #
     ##############################    
