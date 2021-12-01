@@ -130,7 +130,7 @@ if __name__ == "__main__":
     # 1. Text-to-text RNN model #
     #############################
     if FLAGS.text2text:
-        X_train, X_test, y_train, y_test = train_test_split(X_text_onehot, y_text_onehot, test_size=FLAGS.split_size)
+        X_train, X_test, y_train, y_test = train_test_split(X_text_onehot, y_text_onehot, test_size=FLAGS.split)
         
         if FLAGS.create_model:
             model = get_model()

@@ -1,5 +1,9 @@
 
 <!-- TASK 1 -->
+At first run
+$ mkdir pickle model
+$ pip3 install -r requirements.txt
+
 To create the dataset
 $ python3 task1.py --create_dataset
 
