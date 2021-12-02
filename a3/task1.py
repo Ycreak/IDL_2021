@@ -217,7 +217,6 @@ if __name__ == "__main__":
         
         if FLAGS.create_model:
             model = get_img2text_model()
-            model, history = fit_model(model, X_train, y_train, FLAGS.epochs)
         else:
             model = tf.keras.models.load_model('./models/img2text')
 
