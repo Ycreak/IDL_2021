@@ -10,7 +10,7 @@ import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-from tensorflow.keras.layers import Dense, RNN, LSTM, Flatten, TimeDistributed, LSTMCell
+from tensorflow.keras.layers import Dense, RNN, LSTM, Flatten, TimeDistributed, LSTMCell, Bidirectional
 from tensorflow.keras.layers import RepeatVector, Conv2D, SimpleRNN, GRU, Reshape, ConvLSTM2D, Conv2DTranspose
 
 import pandas as pd
@@ -71,13 +71,19 @@ def get_model():
     # Each of these 7 elements in the query will be fed to the network one by one,
     # as shown in the image above (except with 7 elements). # Hint: In other applications, where your input sequences 
     # have a variable length (e.g. sentences), you would use input_shape=(None, unique_characters).
-    model.add(LSTM(256, input_shape=(max_query_length, len(unique_characters))))
+    if FLAGS.bidirectional:
+        model.add(Bidirectional(LSTM(256, input_shape=(max_query_length, len(unique_characters)))))
+    else:
+        model.add(LSTM(256, input_shape=(max_query_length, len(unique_characters))))
     # As the decoder RNN's input, repeatedly provide with the last output of RNN for each time step. Repeat 4 times as that's the maximum length of the output (e.g. '  1-199' = '-198')
     # when using 3-digit integers in queries. In other words, the RNN will always produce 4 characters as its output.
     model.add(RepeatVector(max_answer_length))
     # By setting return_sequences to True, return not only the last output but all the outputs so far in the form of (num_samples, timesteps, output_dim). 
     # This is necessary as TimeDistributed in the below expects the first dimension to be the timesteps.
-    model.add(LSTM(128, return_sequences=True))
+    if FLAGS.bidirectional:
+        model.add(Bidirectional(LSTM(128, return_sequences=True)))
+    else:
+        model.add(LSTM(128, return_sequences=True))
     # Apply a dense layer to the every temporal slice of an input. For each of step of the output sequence, decide which character should be chosen.
     model.add(TimeDistributed(Dense(len(unique_characters), activation='softmax')))
     # Next we compile the model using categorical crossentropy as our loss function.
@@ -86,7 +92,7 @@ def get_model():
     return model
 
 def fit_model(model, X, y, epochs):
-    history = model.fit(X, y, batch_size=32, epochs=epochs, verbose=1)
+    history = model.fit(X, y, batch_size=32, epochs=epochs, verbose=FLAGS.verbose)
     # Save the model for loading at a later time
     model.save('./model')
     return model, history
@@ -99,10 +105,11 @@ if __name__ == "__main__":
     p.add_argument("--create_dataset", action="store_true", help="specify whether to create the dataset: if not specified, we load from disk")
     p.add_argument("--text2text", action="store_true", help="specify whether to run the text2text model")
     p.add_argument("--img2text", action="store_true", help="specify whether to run the img2text model")
-    p.add_argument("--split", type=util.restricted_float, help="specify whether to run the img2text model")
+    p.add_argument("--split", type=util.restricted_float, help="specify the split size of train/test sets")
+    p.add_argument("--verbose", action="store_true", help="specify whether the program is verbose or not")
+    p.add_argument("--bidirectional", action="store_true", help="specify whether the LSTM is bidirectional or not")
 
     FLAGS = p.parse_args()
-    print(FLAGS)
 
     unique_characters = '0123456789+- ' # All unique characters that are used in the queries (13 in total: digits 0-9, 2 operands [+, -], and a space character ' '.)
     highest_integer = 199 # Highest value of integers contained in the queries
@@ -112,8 +119,8 @@ if __name__ == "__main__":
     
     # Booleans
     num_epochs = 25
-    create_line_plot = True
-    evaluate = False
+    create_line_plot = False
+    evaluate = True
     confusion_matrix = False
     # Create the data (might take around a minute)
     X_text, X_img, y_text, y_img = load_data(create_dataset=FLAGS.create_dataset)
@@ -149,7 +156,7 @@ if __name__ == "__main__":
             model = tf.keras.models.load_model('./model')
 
         if evaluate:
-            loss, accuracy = model.evaluate(X_test, y_test, verbose=1)
+            loss, accuracy = model.evaluate(X_test, y_test, verbose=FLAGS.verbose)
             print('Model accuracy: {0}. Model loss: {1}. Split size: {2}'.format(accuracy, loss, FLAGS.split))
 
         if confusion_matrix:
@@ -223,7 +230,7 @@ if __name__ == "__main__":
         # Next we compile the model using categorical crossentropy as our loss function.
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         
-        history = model.fit(X_img, y_text_onehot, batch_size=32, epochs=2, verbose=1)
+        history = model.fit(X_img, y_text_onehot, batch_size=32, epochs=2, verbose=FLAGS.verbose)
 
 
 
