@@ -105,6 +105,7 @@ if __name__ == "__main__":
     p.add_argument("--create_dataset", action="store_true", help="specify whether to create the dataset: if not specified, we load from disk")
     p.add_argument("--text2text", action="store_true", help="specify whether to run the text2text model")
     p.add_argument("--img2text", action="store_true", help="specify whether to run the img2text model")
+    p.add_argument("--text2img", action="store_true", help="specify whether to run the text2img model")
     p.add_argument("--split", type=util.restricted_float, help="specify the split size of train/test sets")
     p.add_argument("--verbose", action="store_true", help="specify whether the program is verbose or not")
     p.add_argument("--bidirectional", action="store_true", help="specify whether the LSTM is bidirectional or not")
@@ -177,48 +178,21 @@ if __name__ == "__main__":
     # 2. Image-to-text RNN model #
     ##############################    
     if FLAGS.img2text:
-        
-        # We have 7 MNIST digits for every X_img example. Each MNIST image is 28x28 pixels. Our input dimensions are therefore 28 * 7(28) = 28 * 196 = 5488
-        x_dim = 28 * 7
-        y_dim = 28 * 1
-        n_inputs = x_dim * y_dim # maximum query length
+        #  80000 x 7 x (28*28) = current data
+        # Input shape of the model would be the shape of one sample (row of data)
+        # This is 7 (images) x (28*28) (one image, flattened in our case to 784)
+        n_samples = X_img.shape[0]
+        n_timesteps = X_img.shape[1]
+        n_features = X_img.shape[2] * X_img.shape[3]
 
-        n_features = X_img.shape[1] # Count the number of columsn. these are our features
-        X_img = X_img.reshape(80000, 5488, 1).astype('float32')
-
-        print('SHAPE', X_img.shape)
-
-        print(n_features)
-        print(len(X_img))
-        # exit(0)
-
-        max_query_length = n_inputs # Maximum length of the query string (consists of two integers and an operand [e.g. '22+10'])
-        max_answer_length = max_int_length + 1    # Maximum length of the answer string
-        
-        num_timesteps = x_dim * y_dim
-        num_features = len(unique_characters)
-        # print(y_text_onehot.shape)
-        # y_text_onehot = y_text_onehot.reshape(1,-1)
-        # print(y_text_onehot.shape) # (3,)
-
-        # exit(0)
-
-        # x = tf.placeholder("float", [None, 196, 28])
-        # y = tf.placeholder("float", [None, 12])
-        # print(X_img[5567])
-        # print(type(X_img[5567]))
-        # # display_sample(5567)
-
-        # print(X_img[5567].shape)
-
+        # LSTM wants a sequence as input, aka the seven images
+        # Every image we convert from 28*28 to 784 array for convenience
+        X_img = X_img.reshape(n_samples, n_timesteps, n_features)
+   
         # We start by initializing a sequential model
         model = tf.keras.Sequential()
         # "Encode" the input sequence using an RNN, producing an output of size 256.
-        # In this case the size of our input vectors is [7, 13] as we have queries of length 7 and 13 unique characters. 
-        # Each of these 7 elements in the query will be fed to the network one by one,
-        # as shown in the image above (except with 7 elements). # Hint: In other applications, where your input sequences 
-        # have a variable length (e.g. sentences), you would use input_shape=(None, unique_characters).
-        model.add(LSTM(256, input_shape=(num_timesteps, num_features)))
+        model.add(LSTM(256, input_shape=(n_timesteps, n_features)))
         # As the decoder RNN's input, repeatedly provide with the last output of RNN for each time step. Repeat 4 times as that's the maximum length of the output (e.g. '  1-199' = '-198')
         # when using 3-digit integers in queries. In other words, the RNN will always produce 4 characters as its output.
         model.add(RepeatVector(max_answer_length))
@@ -231,23 +205,7 @@ if __name__ == "__main__":
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         
         history = model.fit(X_img, y_text_onehot, batch_size=32, epochs=2, verbose=FLAGS.verbose)
-
-
-
-
-
-
-
-
-
-
-
-    # print('#####')
-    # print(X_text[5578])
-    # print('#####')
-    # print(X_text_onehot[5578])
-    # print('#####')
-    # print(y_text_onehot[5567])
-    # print('#####')
-    # print(y_text[5578])  
-    # print('#####')
+    
+    if FLAGS.text2img:
+        # # #
+        pass
