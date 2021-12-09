@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+from datetime import datetime
 
 from tensorflow.keras.layers import Dense, RNN, LSTM, Flatten, TimeDistributed, LSTMCell, Bidirectional
 from tensorflow.keras.layers import RepeatVector, Conv2D, SimpleRNN, GRU, Reshape, ConvLSTM2D, Conv2DTranspose
@@ -177,7 +178,9 @@ if __name__ == "__main__":
                     title = 'LSTM accuracy',
                     plotname = 'lstm_accuracy'
                 )
-            util.pickle_write('./pickle/', 'history.pickle', history)
+            current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+            filename = 'history-{0}.pickle'.format(current_moment)
+            util.pickle_write('./pickle/', filename, history)
 
         else:
             model = tf.keras.models.load_model('./models/text2text')
