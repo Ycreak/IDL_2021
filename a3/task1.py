@@ -134,7 +134,7 @@ if __name__ == "__main__":
     p.add_argument("--text2text", action="store_true", help="specify whether to run the text2text model")
     p.add_argument("--img2text", action="store_true", help="specify whether to run the img2text model")
     p.add_argument("--text2img", action="store_true", help="specify whether to run the text2img model")
-    p.add_argument("--split", type=util.restricted_float, help="specify the split size of train/test sets")
+    p.add_argument("--split", type=util.restricted_float, default=0.2, help="specify the split size of train/test sets")
     p.add_argument("--verbose", action="store_true", help="specify whether the program is verbose or not")
     p.add_argument("--evaluate", action="store_true", help="specify whether the model will be evaluated")
     p.add_argument("--line_plot", action="store_true", help="specify whether a line plot will be created of the training process")
@@ -177,6 +177,8 @@ if __name__ == "__main__":
                     title = 'LSTM accuracy',
                     plotname = 'lstm_accuracy'
                 )
+            util.pickle_write('./pickle/', 'history.pickle', history)
+
         else:
             model = tf.keras.models.load_model('./models/text2text')
 
