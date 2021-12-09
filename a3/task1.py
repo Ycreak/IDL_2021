@@ -180,7 +180,7 @@ if __name__ == "__main__":
                 )
             current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
             filename = 'history-{0}.pickle'.format(current_moment)
-            util.pickle_write('./pickle/', filename, history)
+            util.pickle_write('./pickle/', filename, history.history['accuracy'])
 
         else:
             model = tf.keras.models.load_model('./models/text2text')
