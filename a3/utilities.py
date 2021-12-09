@@ -105,3 +105,18 @@ def restricted_float(x):
     if x < 0.0 or x > 1.0:
         raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
     return x    
+
+if __name__ == "__main__":
+    history1 = pickle_read('/home/luukie/Data/RAMDisk/', 'history-1.pickle')
+    history2 = pickle_read('/home/luukie/Data/RAMDisk/', 'history-2.pickle')
+
+    plt.plot(history1)
+    plt.plot(history2)
+
+    plt.ylabel('Accuracy')
+    plt.xlabel('Number of epochs')
+    plt.legend(['LSTM', 'BiLSTM'], loc='lower right')
+    plt.title('Training Accuracy for img2text (Bi)LSTM')
+    # plt.savefig(full_file_name)
+    plt.show()
+    plt.clf()  
