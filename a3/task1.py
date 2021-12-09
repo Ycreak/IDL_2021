@@ -234,8 +234,8 @@ if __name__ == "__main__":
         
         current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
         filename = 'history-{0}.pickle'.format(current_moment)
-        util.pickle_write('./pickle/', filename, history)
-
+        saved_history = history.history['accuracy']
+        util.pickle_write('./pickle/', filename, saved_history)
 
         if FLAGS.evaluate:
             loss, accuracy = model.evaluate(X_test, y_test, verbose=FLAGS.verbose)
