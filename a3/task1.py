@@ -230,6 +230,11 @@ if __name__ == "__main__":
         history = model.fit(X_train, y_train, batch_size=32, epochs=FLAGS.epochs, verbose=FLAGS.verbose)
         end = time.time()
         model.save('./models/img2text')
+        
+        current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        filename = 'history-{0}.pickle'.format(current_moment)
+        util.pickle_write('./pickle/', filename, history)
+
 
         if FLAGS.evaluate:
             loss, accuracy = model.evaluate(X_test, y_test, verbose=FLAGS.verbose)
