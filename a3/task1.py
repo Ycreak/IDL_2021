@@ -7,11 +7,11 @@ import time
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-from tensorflow.keras.layers import Dense, RNN, LSTM, Flatten, TimeDistributed, LSTMCell, Bidirectional
-from tensorflow.keras.layers import RepeatVector, Conv2D, SimpleRNN, GRU, Reshape, ConvLSTM2D, Conv2DTranspose
+from tensorflow.keras.layers import Input, Activation, Dense, RNN, LSTM, Flatten, TimeDistributed, LSTMCell, Bidirectional
+from tensorflow.keras.layers import RepeatVector, Conv2D, SimpleRNN, GRU, Reshape, ConvLSTM2D, Conv2DTranspose, Cropping1D
+from tensorflow.keras.models import Model
 
 import pandas as pd
 # Class imports
@@ -119,11 +119,42 @@ def get_img2text_model():
 
     return model
 
+def get_text2img_model():
+    deconv_inputs = Input(shape=(64,), name='deconv_input')
+    feature_map_shape = (None, max_query_length, len(unique_characters) + 1)
+
+    # Regular dense layer as a base, then reshaped to square dimension
+    x = Dense(feature_map_shape[1] * feature_map_shape[2])(deconv_inputs)
+    x = Reshape((feature_map_shape[1], feature_map_shape[2], 1))(x)
+
+    # Expand the dimensions to 28 * 28
+    x = Conv2DTranspose(filters=16, kernel_size=3, strides=(2,2), activation='relu', padding='same')(x)
+    x = Conv2DTranspose(filters=16, kernel_size=3, strides=(2,1), activation='relu', padding='same')(x)
+    x = Conv2DTranspose(filters=1, kernel_size=3, padding='same')(x) # last layer has 3 channels
+    
+    deconv_output = Activation('sigmoid', name='deconv_output')(x)
+    deconv_model = Model(deconv_inputs, deconv_output, name='deconv_network')
+
+    # The frontend of the model, your usual LSTM layer
+    lstm_input = Input(shape=(max_query_length, len(unique_characters) + 1), name='lstm_input') # => [batch_size, timesteps, input_dim]
+    lstm_outputs = LSTM(units=64, return_sequences=True)(lstm_input) # => [batch_size, timesteps, output_dim]
+
+    # Utility to crop the output from [batch_size,7,28,28] to [batch_size,4,28,28]
+    lstm_outputs = Cropping1D(cropping=(3,0))(lstm_outputs)
+    # Connect outputs and model
+    predicted_images = TimeDistributed(deconv_model)(lstm_outputs)
+    
+    model = Model(lstm_input, predicted_images, name='lstm_deconv')
+    model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mean_squared_error'])
+
+    return model
+
 def fit_model(model, X, y, epochs, save_path='./models/temp'):
     history = model.fit(X, y, batch_size=32, epochs=epochs, verbose=FLAGS.verbose)
     # Save the model for loading at a later time
     model.save(save_path)
     return model, history
+
 
 if __name__ == "__main__":
 
@@ -246,8 +277,23 @@ if __name__ == "__main__":
                                 vmax = 500
                                 )
     ##############################
-    # 2. Text-to-image RNN model #
+    # 3. Text-to-image RNN model #
     ##############################  
     if FLAGS.text2img:
-        # # #
-        pass
+        # Pad the input data so that 13->14 and 2x14=28 (easier for decovultuion)
+        X_text_onehot_pad = np.pad(X_text_onehot, ((0,0),(0,0),(0,1)), 'constant')
+        X_train, X_test, y_train, y_test = train_test_split(X_text_onehot_pad, y_img, test_size=FLAGS.split)
+
+        if FLAGS.create_model:
+            model = get_text2img_model()
+            model, history = fit_model(model, X_train, y_train, FLAGS.epochs, './models/text2img')
+        
+        else:
+            model = tf.keras.models.load_model('./models/text2img')
+
+        # Uncomment this to print a test sample
+        # y_pred = model.predict(X_test)
+        # i_sample = 0
+        # print(X_test[i_sample])
+        # plt.imshow(np.hstack(y_pred[i_sample]), cmap='gray')
+        # plt.show()
