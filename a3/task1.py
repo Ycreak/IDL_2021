@@ -8,6 +8,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
+from datetime import datetime
 
 from tensorflow.keras.layers import Input, Activation, Dense, RNN, LSTM, Flatten, TimeDistributed, LSTMCell, Bidirectional
 from tensorflow.keras.layers import RepeatVector, Conv2D, SimpleRNN, GRU, Reshape, ConvLSTM2D, Conv2DTranspose, Cropping1D
@@ -165,7 +166,7 @@ if __name__ == "__main__":
     p.add_argument("--text2text", action="store_true", help="specify whether to run the text2text model")
     p.add_argument("--img2text", action="store_true", help="specify whether to run the img2text model")
     p.add_argument("--text2img", action="store_true", help="specify whether to run the text2img model")
-    p.add_argument("--split", type=util.restricted_float, help="specify the split size of train/test sets")
+    p.add_argument("--split", type=util.restricted_float, default=0.2, help="specify the split size of train/test sets")
     p.add_argument("--verbose", action="store_true", help="specify whether the program is verbose or not")
     p.add_argument("--evaluate", action="store_true", help="specify whether the model will be evaluated")
     p.add_argument("--line_plot", action="store_true", help="specify whether a line plot will be created of the training process")
@@ -208,6 +209,11 @@ if __name__ == "__main__":
                     title = 'LSTM accuracy',
                     plotname = 'lstm_accuracy'
                 )
+            current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+            filename = 'history-{0}.pickle'.format(current_moment)
+            saved_history = history.history['accuracy']
+            util.pickle_write('./pickle/', filename, saved_history)
+
         else:
             model = tf.keras.models.load_model('./models/text2text')
 
@@ -256,6 +262,11 @@ if __name__ == "__main__":
         history = model.fit(X_train, y_train, batch_size=32, epochs=FLAGS.epochs, verbose=FLAGS.verbose)
         end = time.time()
         model.save('./models/img2text')
+        
+        current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+        filename = 'history-{0}.pickle'.format(current_moment)
+        saved_history = history.history['accuracy']
+        util.pickle_write('./pickle/', filename, saved_history)
 
         if FLAGS.evaluate:
             loss, accuracy = model.evaluate(X_test, y_test, verbose=FLAGS.verbose)
