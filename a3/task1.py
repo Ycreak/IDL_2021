@@ -138,8 +138,10 @@ def get_text2img_model():
 
     # The frontend of the model, your usual LSTM layer
     lstm_input = Input(shape=(max_query_length, len(unique_characters) + 1), name='lstm_input') # => [batch_size, timesteps, input_dim]
-    lstm_outputs = LSTM(units=64, return_sequences=True)(lstm_input) # => [batch_size, timesteps, output_dim]
-
+    if FLAGS.bidirectional:  
+        lstm_outputs = Bidirectional(LSTM(units=64, return_sequences=True))(lstm_input) # => [batch_size, timesteps, output_dim]
+    else:
+        lstm_outputs = LSTM(units=64, return_sequences=True)(lstm_input) # => [batch_size, timesteps, output_dim]
     # Utility to crop the output from [batch_size,7,28,28] to [batch_size,4,28,28]
     lstm_outputs = Cropping1D(cropping=(3,0))(lstm_outputs)
     # Connect outputs and model
@@ -290,7 +292,15 @@ if __name__ == "__main__":
     ##############################
     # 3. Text-to-image RNN model #
     ##############################  
+    # FLAGS.text2img = True
+    # FLAGS.create_model = True
+    # FLAGS.verbose = True
+    # FLAGS.epochs = 1
+    # FLAGS.evaluate = True
+    # FLAGS.line_plot = True
+
     if FLAGS.text2img:
+        print('lets go')
         # Pad the input data so that 13->14 and 2x14=28 (easier for decovultuion)
         X_text_onehot_pad = np.pad(X_text_onehot, ((0,0),(0,0),(0,1)), 'constant')
         X_train, X_test, y_train, y_test = train_test_split(X_text_onehot_pad, y_img, test_size=FLAGS.split)
@@ -298,9 +308,31 @@ if __name__ == "__main__":
         if FLAGS.create_model:
             model = get_text2img_model()
             model, history = fit_model(model, X_train, y_train, FLAGS.epochs, './models/text2img')
-        
+            
+            if FLAGS.line_plot:
+                util.create_line_plot( # Create a line plot of the training
+                    plots = (history.history['mean_squared_error'],),
+                    ylabel = 'Accuracy',
+                    xlabel = 'Epoch',
+                    plot_titles = ['MSE'],
+                    title = 'Training accuracy for text2img LSTM',
+                    plotname = 'lstm_text2img_accuracy'
+                )
+
+            current_moment = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+            filename = 'text2img_history-{0}.pickle'.format(current_moment)
+            saved_history = history.history['mean_squared_error']
+            util.pickle_write('./pickle/', filename, saved_history)
+
         else:
             model = tf.keras.models.load_model('./models/text2img')
+
+
+        if FLAGS.evaluate:
+            loss, accuracy = model.evaluate(X_test, y_test, verbose=FLAGS.verbose)
+            print('Model LOSS: {0}. Model MSE: {1}. Split size: {2}'.format(loss, accuracy, FLAGS.split))
+
+
 
         # Uncomment this to print a test sample
         # y_pred = model.predict(X_test)
