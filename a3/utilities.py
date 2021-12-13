@@ -107,8 +107,8 @@ def restricted_float(x):
     return x    
 
 if __name__ == "__main__":
-    history1 = pickle_read('/home/luukie/Data/RAMDisk/', 'history-1.pickle')
-    history2 = pickle_read('/home/luukie/Data/RAMDisk/', 'history-2.pickle')
+    history1 = pickle_read('/home/luukie/Data/RAMDisk/', 'history1.pickle')
+    history2 = pickle_read('/home/luukie/Data/RAMDisk/', 'history2.pickle')
 
     plt.plot(history1)
     plt.plot(history2)
