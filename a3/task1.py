@@ -139,7 +139,7 @@ def get_text2img_model():
     # The frontend of the model, your usual LSTM layer
     lstm_input = Input(shape=(max_query_length, len(unique_characters) + 1), name='lstm_input') # => [batch_size, timesteps, input_dim]
     if FLAGS.bidirectional:  
-        lstm_outputs = Bidirectional(LSTM(units=64, return_sequences=True))(lstm_input) # => [batch_size, timesteps, output_dim]
+        lstm_outputs = Bidirectional(LSTM(units=32, return_sequences=True))(lstm_input) # => [batch_size, timesteps, output_dim]
     else:
         lstm_outputs = LSTM(units=64, return_sequences=True)(lstm_input) # => [batch_size, timesteps, output_dim]
     # Utility to crop the output from [batch_size,7,28,28] to [batch_size,4,28,28]
@@ -326,7 +326,6 @@ if __name__ == "__main__":
 
         else:
             model = tf.keras.models.load_model('./models/text2img')
-
 
         if FLAGS.evaluate:
             loss, accuracy = model.evaluate(X_test, y_test, verbose=FLAGS.verbose)

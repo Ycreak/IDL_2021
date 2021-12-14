@@ -106,6 +106,17 @@ def restricted_float(x):
         raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
     return x    
 
+
+def grayscale_to_rgb(images, channel_axis=-1):
+    from keras import backend as K
+    
+    # images= K.expand_dims(images, axis=channel_axis)
+    tiling = [1] * 4    # 4 dimensions: B, H, W, C
+    tiling[channel_axis] *= 3
+    images= K.tile(images, tiling)
+    
+    return images
+
 if __name__ == "__main__":
     history1 = pickle_read('/home/luukie/Data/RAMDisk/', 'history1.pickle')
     history2 = pickle_read('/home/luukie/Data/RAMDisk/', 'history2.pickle')
@@ -113,10 +124,12 @@ if __name__ == "__main__":
     plt.plot(history1)
     plt.plot(history2)
 
-    plt.ylabel('Accuracy')
+    plt.ylabel('Mean Squared Error')
     plt.xlabel('Number of epochs')
-    plt.legend(['LSTM', 'BiLSTM'], loc='lower right')
-    plt.title('Training Accuracy for img2text (Bi)LSTM')
+    plt.legend(['LSTM', 'BiLSTM'], loc='upper right')
+    # plt.legend(['LSTM'], loc='upper right')
+
+    plt.title('Training MSE for text2img (bi)LSTM')
     # plt.savefig(full_file_name)
     plt.show()
     plt.clf()  

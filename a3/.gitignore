@@ -1,4 +1,6 @@
 env/*
 pickle/*
-model/*
+models/*
 data/*
+plots/*
+__pycache__

@@ -4,6 +4,11 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import argparse
 
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, Conv2DTranspose, Reshape
+from keras.datasets import mnist, fashion_mnist
+
+import utilities as util
+
 #######
 # CAE #
 #######
@@ -27,9 +32,8 @@ def grid_plot(images, epoch='', name='', n=3, save=False, scale=False):
         filename = 'results/generated_plot_e%03d_f.png' % (epoch+1)
         plt.savefig(filename)
         plt.close()
-    plt.show()
+    # plt.show()
 
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, Conv2DTranspose, Reshape
 
 def build_conv_net(in_shape, out_shape, n_downsampling_layers=4, out_activation='sigmoid'):
     """
@@ -61,7 +65,7 @@ def build_deconv_net(latent_dim, n_upsampling_layers=4, activation_out='sigmoid'
 
     model = tf.keras.Sequential()
     model.add(Dense(4 * 4 * 64, input_dim=latent_dim))
-    model.add(Reshape((4, 4, 64)))
+    model.add(Reshape((4, 4 , 64)))
     default_args=dict(kernel_size=(3,3), strides=(2,2), padding='same', activation='relu')
     
     for i in range(n_upsampling_layers):
@@ -70,6 +74,9 @@ def build_deconv_net(latent_dim, n_upsampling_layers=4, activation_out='sigmoid'
     # This last convolutional layer converts back to 3 channel RGB image
     model.add(Conv2D(filters=3, kernel_size=(3,3), activation=activation_out, padding='same'))
     model.summary()
+
+    # exit(0)
+
     return model
 
 def build_convolutional_autoencoder(data_shape, latent_dim):
@@ -203,8 +210,27 @@ if __name__ == "__main__":
     # p.add_argument('--epochs', default=25, type=int, help='number of epochs')
     FLAGS = p.parse_args()
 
-    dataset = load_real_samples()
+    # Original dataset used by Jupyter Notebook
+    # dataset = load_real_samples()
+    
+    # Load MNIST and turn it into the right dimensions
+    dataset = mnist
+    (X_train, y_train), (X_test, y_test) = dataset.load_data()
+    print(X_train.shape)
+    # Expand the dimensions to 64x64 (i cant get the conv layer to work otherwise)
+    X_train = np.expand_dims(X_train, axis=-1)
+    X_train = tf.image.resize(X_train, [64,64]) # if we want to resize 
+    print(X_train.shape) # (60000, 32, 32, 1)
+    # Turn it into RGB (plz help)
+    X_train = util.grayscale_to_rgb(X_train)
+    print(X_train.shape) # (60000, 32, 32, 1)
+
+    dataset = X_train
+    # exit(0)
+
     # grid_plot(dataset[np.random.randint(0, 1000, 4)], name='Fliqr dataset (64x64x3)', n=2)
+    # exit(0)
+
 
     if FLAGS.cae:
         image_size = dataset.shape[1:]
@@ -226,7 +252,6 @@ if __name__ == "__main__":
 
     if FLAGS.vae:
         # Training the VAE model
-
         latent_dim = 32
         encoder, decoder, vae = build_vae(dataset.shape[1:], latent_dim)
 
@@ -236,7 +261,7 @@ if __name__ == "__main__":
             vae.fit(dataset, dataset, epochs=1, batch_size=4)
             
             images = decoder(latent_vectors)
-            grid_plot(images, epoch, name='VAE generated images', n=3, save=False)
+            grid_plot(images, epoch, name='VAE generated images', n=3, save=True)
 
     if FLAGS.gan:
         latent_dim = 128
