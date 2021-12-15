@@ -78,9 +78,6 @@ def build_deconv_net(latent_dim, n_upsampling_layers=4, activation_out='sigmoid'
     # This last convolutional layer converts back to 3 channel RGB image
     model.add(Conv2D(filters=3, kernel_size=(3,3), activation=activation_out, padding='same'))
     model.summary()
-
-    # exit(0)
-
     return model
 
 def build_convolutional_autoencoder(data_shape, latent_dim):
@@ -216,17 +213,12 @@ if __name__ == "__main__":
 
     # Load dataset ### Change functions here to switch between datasets
     dataset = load_real_samples_cats_dataset()
-    dataset_scaled = load_real_samples_cats_dataset(scale=True)
 
     # Cats images are still in 1d vector format, needs reshaping
     dataset = dataset.reshape((dataset.shape[0], 64, 64, 3))
-    dataset_scaled = dataset_scaled.reshape((dataset_scaled.shape[0], 64, 64, 3))
-
-    print('dataset shape: ' + str(dataset.shape))
+    
+    print('dataset shape: ' + str(dataset.shape) + '\nimage SIZE=' + str(dataset.shape[1]) + 'x' + str(dataset.shape[2]))
     grid_plot(dataset[np.random.randint(0, 1000, 4)], name='dataset images', n=2)
-
-    print(dataset[0])
-    print(dataset_scaled[0])
 
     if FLAGS.cae:
         image_size = dataset.shape[1:]
@@ -262,6 +254,9 @@ if __name__ == "__main__":
     if FLAGS.gan:
         latent_dim = 128
         discriminator, generator, gan = build_gan(dataset.shape[1:], latent_dim)
+
+        # Use scaled values ### Change function here to swap datasets
         dataset_scaled = load_real_samples_cats_dataset(scale=True)
+        dataset_scaled = dataset_scaled.reshape((dataset_scaled.shape[0], 64, 64, 3))
 
         train_gan(generator, discriminator, gan, dataset_scaled, latent_dim)
