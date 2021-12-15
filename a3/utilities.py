@@ -107,15 +107,13 @@ def restricted_float(x):
     return x    
 
 
-def grayscale_to_rgb(images, channel_axis=-1):
-    from keras import backend as K
-    
-    # images= K.expand_dims(images, axis=channel_axis)
-    tiling = [1] * 4    # 4 dimensions: B, H, W, C
-    tiling[channel_axis] *= 3
-    images= K.tile(images, tiling)
-    
-    return images
+def grayscale_to_rgb(dataset):
+    empty = np.empty((dataset.shape[0], dataset.shape[1], dataset.shape[2], 3), dtype=int)
+    for i in range(dataset.shape[0]):
+        gray_normalized = dataset[i].clip(0,80)/80 * 255
+        empty[i] = np.stack([gray_normalized]*3, axis=2)
+    return empty
+
 
 if __name__ == "__main__":
     history1 = pickle_read('/home/luukie/Data/RAMDisk/', 'history1.pickle')

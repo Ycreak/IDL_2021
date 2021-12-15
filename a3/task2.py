@@ -5,15 +5,19 @@ import matplotlib.pyplot as plt
 import argparse
 
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, Conv2DTranspose, Reshape
-from keras.datasets import mnist, fashion_mnist
 
-import utilities as util
 
 #######
 # CAE #
 #######
-def load_real_samples(scale=False):
-    X = np.load('./data/face_dataset_64x64.npy')[:20000, :, :, :]
+def load_real_samples_face_dataset(scale=False):
+    X = np.load('./face_dataset_64x64.npy')[:20000, :, :, :]
+    if scale:
+        X = (X - 127.5) * 2
+    return X / 255.
+
+def load_real_samples_cats_dataset(scale=False):
+    X = np.load('./cats.npy')
     if scale:
         X = (X - 127.5) * 2
     return X / 255.
@@ -32,7 +36,7 @@ def grid_plot(images, epoch='', name='', n=3, save=False, scale=False):
         filename = 'results/generated_plot_e%03d_f.png' % (epoch+1)
         plt.savefig(filename)
         plt.close()
-    # plt.show()
+    plt.show()
 
 
 def build_conv_net(in_shape, out_shape, n_downsampling_layers=4, out_activation='sigmoid'):
@@ -210,27 +214,19 @@ if __name__ == "__main__":
     # p.add_argument('--epochs', default=25, type=int, help='number of epochs')
     FLAGS = p.parse_args()
 
-    # Original dataset used by Jupyter Notebook
-    # dataset = load_real_samples()
-    
-    # Load MNIST and turn it into the right dimensions
-    dataset = mnist
-    (X_train, y_train), (X_test, y_test) = dataset.load_data()
-    print(X_train.shape)
-    # Expand the dimensions to 64x64 (i cant get the conv layer to work otherwise)
-    X_train = np.expand_dims(X_train, axis=-1)
-    X_train = tf.image.resize(X_train, [64,64]) # if we want to resize 
-    print(X_train.shape) # (60000, 32, 32, 1)
-    # Turn it into RGB (plz help)
-    X_train = util.grayscale_to_rgb(X_train)
-    print(X_train.shape) # (60000, 32, 32, 1)
+    # Load dataset ### Change functions here to switch between datasets
+    dataset = load_real_samples_cats_dataset()
+    dataset_scaled = load_real_samples_cats_dataset(scale=True)
 
-    dataset = X_train
-    # exit(0)
+    # Cats images are still in 1d vector format, needs reshaping
+    dataset = dataset.reshape((dataset.shape[0], 64, 64, 3))
+    dataset_scaled = dataset_scaled.reshape((dataset_scaled.shape[0], 64, 64, 3))
 
-    # grid_plot(dataset[np.random.randint(0, 1000, 4)], name='Fliqr dataset (64x64x3)', n=2)
-    # exit(0)
+    print('dataset shape: ' + str(dataset.shape))
+    grid_plot(dataset[np.random.randint(0, 1000, 4)], name='dataset images', n=2)
 
+    print(dataset[0])
+    print(dataset_scaled[0])
 
     if FLAGS.cae:
         image_size = dataset.shape[1:]
@@ -266,6 +262,6 @@ if __name__ == "__main__":
     if FLAGS.gan:
         latent_dim = 128
         discriminator, generator, gan = build_gan(dataset.shape[1:], latent_dim)
-        dataset_scaled = load_real_samples(scale=True)
+        dataset_scaled = load_real_samples_cats_dataset(scale=True)
 
         train_gan(generator, discriminator, gan, dataset_scaled, latent_dim)
