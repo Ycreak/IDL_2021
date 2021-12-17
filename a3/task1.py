@@ -331,12 +331,28 @@ if __name__ == "__main__":
             print('Model LOSS: {0}. Model MSE: {1}. Split size: {2}'.format(loss, accuracy, FLAGS.split))
 
 
-
         # Uncomment this to print a test sample
         y_pred = model.predict(X_test)
-        i_sample = 0
-        print(X_test[i_sample])
-        plt.imshow(np.hstack(y_pred[i_sample]), cmap='gray')
-        plt.savefig('mynumber_100_epochs')
-
+        # i_sample = 0
+        # print(X_test[i_sample])
+        
+        plt.imshow(np.hstack(y_pred[0]), cmap='gray')
+        plt.savefig('mynumber_100_epochs1')
+        plt.clf()
         # plt.show()
+
+        plt.imshow(np.hstack(y_pred[1]), cmap='gray')
+        plt.savefig('mynumber_100_epochs2')
+        plt.clf()
+
+        plt.imshow(np.hstack(y_pred[2]), cmap='gray')
+        plt.savefig('mynumber_100_epochs3')
+        plt.clf()
+
+        plt.imshow(np.hstack(y_pred[3]), cmap='gray')
+        plt.savefig('mynumber_100_epochs4')
+        plt.clf()
+
+        plt.imshow(np.hstack(y_pred[4]), cmap='gray')
+        plt.savefig('mynumber_100_epochs5')
+        plt.clf()                        
