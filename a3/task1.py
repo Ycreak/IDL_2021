@@ -300,7 +300,6 @@ if __name__ == "__main__":
     # FLAGS.line_plot = True
 
     if FLAGS.text2img:
-        print('lets go')
         # Pad the input data so that 13->14 and 2x14=28 (easier for decovultuion)
         X_text_onehot_pad = np.pad(X_text_onehot, ((0,0),(0,0),(0,1)), 'constant')
         X_train, X_test, y_train, y_test = train_test_split(X_text_onehot_pad, y_img, test_size=FLAGS.split)
@@ -334,8 +333,10 @@ if __name__ == "__main__":
 
 
         # Uncomment this to print a test sample
-        # y_pred = model.predict(X_test)
-        # i_sample = 0
-        # print(X_test[i_sample])
-        # plt.imshow(np.hstack(y_pred[i_sample]), cmap='gray')
+        y_pred = model.predict(X_test)
+        i_sample = 0
+        print(X_test[i_sample])
+        plt.imshow(np.hstack(y_pred[i_sample]), cmap='gray')
+        plt.savefig('mynumber_100_epochs')
+
         # plt.show()

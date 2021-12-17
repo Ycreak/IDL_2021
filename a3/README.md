@@ -1,13 +1,15 @@
 
 <!-- TASK 1 -->
 At first run
-$ mkdir pickle model
 $ pip3 install -r requirements.txt
 
 To create the dataset
 $ python3 task1.py --create_dataset
 
-To create the model and save it to disk
-$ python3 task1.py --create_model
+To run the experiments, execute the corresponding bash files in experiments/ (NB: dataset will not be created automatically here)
 
-To run the split size experiment from 1.1, execute experiments/task1-1_splitsize.sh
+<!-- TASK 2 -->
+At first run, generate the cat data. Make sure the cat dataset is in the ./cats/ folder
+$ python3 generate_cat_data.py
+
+To run the experiments, execute the bash files in experiments/ (NB: dataset will not be created automatically here)

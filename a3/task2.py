@@ -1,3 +1,8 @@
+# Philippe Bors 1773585
+# Luuk Nolden 1370898
+
+# IDL 2021
+
 from tqdm import tqdm
 import numpy as np
 import tensorflow as tf
